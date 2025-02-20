@@ -83,11 +83,8 @@ chatbot = Chatbot()
 def test():
     return "Test endpoint working!"
 
-@app.route('/', methods=['POST'])
-def hello_world():
-    return jsonify({"text": 'Hello from Koyeb - you reached the main page!'})
 
-@app.route('/query', methods=['POST'])
+@app.route('/', methods=['POST'])
 def query():
     # Log the complete incoming data to ensure it hits this route
     data = request.get_json()
