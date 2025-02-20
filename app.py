@@ -75,6 +75,9 @@ class Chatbot:
         """Process user query and return formatted chatbot response."""
         return self.ask_llm(query)  # Only returning cleaned response without extras
 
+# Initialize Chatbot
+chatbot = Chatbot()
+
 # Testing Route
 @app.route('/test', methods=['GET'])
 def test():
@@ -82,7 +85,7 @@ def test():
 
 @app.route('/', methods=['POST'])
 def hello_world():
-   return jsonify({"text": 'Hello from Koyeb - you reached the main page!'})
+    return jsonify({"text": 'Hello from Koyeb - you reached the main page!'})
 
 @app.route('/query', methods=['POST'])
 def query():
@@ -123,4 +126,4 @@ def page_not_found(e):
     return "Not Found", 404
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(debug=True, host='0.0.0.0', port=8000)
