@@ -3,7 +3,7 @@ import wikipediaapi
 import re
 import os
 from flask import Flask, request, jsonify
-from llmproxy import generate, pdf_upload  # Use llmproxy functions for generation and PDF upload
+from llmproxy import generate, pdf_upload  # Assuming these functions are correctly defined
 
 app = Flask(__name__)
 
@@ -83,7 +83,6 @@ chatbot = Chatbot()
 def test():
     return "Test endpoint working!"
 
-
 @app.route('/', methods=['POST'])
 def query():
     # Log the complete incoming data to ensure it hits this route
@@ -120,7 +119,7 @@ def query():
 
 @app.errorhandler(404)
 def page_not_found(e):
-    return "Not Found", 404
+    return jsonify({"error": "Not Found"}), 404
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=8000)
