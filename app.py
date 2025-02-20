@@ -75,15 +75,17 @@ class Chatbot:
         """Process user query and return formatted chatbot response."""
         return self.ask_llm(query)  # Only returning cleaned response without extras
 
-# Testing Route
+# Testing Route - No need to alter this route if it's just for testing
 @app.route('/test', methods=['GET'])
 def test():
     return "Test endpoint working!"
 
+# Remove or modify this endpoint if it's not needed:
 @app.route('/', methods=['POST'])
 def hello_world():
-   return jsonify({"text": 'Hello from Koyeb - you reached the main page!'})
+   return jsonify({"text": 'This is the chatbot, ready to assist!'})
 
+# This is where the actual chatbot logic happens:
 @app.route('/query', methods=['POST'])
 def query():
     data = request.get_json()
