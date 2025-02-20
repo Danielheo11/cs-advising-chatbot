@@ -1,13 +1,14 @@
-import os
+import json
 import wikipediaapi
 import re
+import os
+
 from flask import Flask, request, jsonify, render_template
-from typing import Optional  # Ensures compatibility with Python 3.9
-from llmproxy import generate  # Import generate from llmproxy
+from llmproxy import generate, pdf_upload  # Use llmproxy functions for generation and PDF upload
 
 # Fetch API keys from environment variables
-end_point = os.environ.get("END_POINT")  # Make sure to set this in Koyeb
-api_key = os.environ.get("API_KEY")  # Make sure to set this in Koyeb
+end_point = os.environ.get("END_POINT")  # Ensure these are set in your environment
+api_key = os.environ.get("API_KEY")  # Ensure these are set in your environment
 
 # Initialize Wikipedia API
 wiki_wiki = wikipediaapi.Wikipedia(
@@ -25,31 +26,13 @@ class Chatbot:
     def upload_pdfs(self):
         """Upload PDFs for retrieval-augmented generation (RAG)."""
         print("Uploading advising PDFs for retrieval...")
-        self.pdf_upload("CompSci_LA_major.pdf", session_id=self.session_id, strategy='smart')
-        self.pdf_upload("CS_Course_Descriptions.pdf", session_id=self.session_id, strategy='smart')
+        pdf_upload("CompSci_LA_major.pdf", session_id=self.session_id, strategy='smart')  # Using pdf_upload function
+        pdf_upload("CS_Course_Descriptions.pdf", session_id=self.session_id, strategy='smart')  # Using pdf_upload function
         print("PDFs uploaded. Ready to chat!\n")
-
-    def generate(self, model: str, system: str, query: str, temperature: Optional[float] = None, lastk: Optional[int] = None,
-                 session_id: Optional[str] = None, rag_threshold: Optional[float] = 0.3, rag_usage: Optional[bool] = False,
-                 rag_k: Optional[int] = 5):
-        """Generate response using the model via llmproxy."""
-        response = generate(
-            model=model,
-            system=system,
-            query=query,
-            temperature=temperature,
-            lastk=lastk,
-            session_id=session_id,
-            rag_threshold=rag_threshold,
-            rag_usage=rag_usage,
-            rag_k=rag_k
-        )
-
-        return response
 
     def ask_llm(self, query):
         """Ask the LLM while using RAG for retrieval where necessary."""
-        response = self.generate(
+        response = generate(
             model="4o-mini",
             system="You are an AI academic advisor for Tufts CS students. Provide responses based on official guidelines.",
             query=query,
@@ -61,8 +44,10 @@ class Chatbot:
             rag_k=5
         )
 
+        # Extract chatbot response (removing unwanted metadata)
         chatbot_response = response.get("response", "").strip()
 
+        # Ensure response is valid
         if chatbot_response and chatbot_response.lower() not in ["no valid response found.", "an error was encountered"]:
             return self.format_response(chatbot_response)
 
@@ -77,8 +62,10 @@ class Chatbot:
         # Remove unnecessary text after "Suggested Course Sequence"
         formatted_response = re.split(r"(### Additional Considerations|Additional Considerations)", formatted_response)[0]
 
+        # Fix: Remove excessive whitespace and metadata
         formatted_response = formatted_response.strip()
 
+        # Limit excessive text length (adjust max chars if needed)
         MAX_LEN = 10000
         if len(formatted_response) > MAX_LEN:
             formatted_response = formatted_response[:MAX_LEN] + "\n\n... [Response trimmed]"
@@ -88,9 +75,6 @@ class Chatbot:
     def get_response(self, query):
         """Process user query and return formatted chatbot response."""
         return self.ask_llm(query)  # Only returning cleaned response without extras
-
-# Initialize the chatbot
-chatbot = Chatbot()
 
 @app.route('/')
 def home():
@@ -110,4 +94,5 @@ def chat():
     return jsonify({"response": response})
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5001, debug=True)
+    chatbot = Chatbot()  # Initialize the chatbot instance
+    app.run(host='0.0.0.0', port=5001, debug=True)  # Run Flask app
