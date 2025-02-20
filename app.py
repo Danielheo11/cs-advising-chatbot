@@ -1,16 +1,13 @@
-import json
+import os
 import wikipediaapi
 import re
 from flask import Flask, request, jsonify, render_template
 import requests
 from typing import Optional  # Ensures compatibility with Python 3.9
 
-# Load API keys from config.json
-with open("config.json") as config_file:
-    config = json.load(config_file)
-
-end_point = config['endPoint']
-api_key = config['apiKey']
+# Fetch API keys from environment variables
+end_point = os.environ.get("END_POINT")  # Make sure to set this in Koyeb
+api_key = os.environ.get("API_KEY")  # Make sure to set this in Koyeb
 
 # Initialize Wikipedia API
 wiki_wiki = wikipediaapi.Wikipedia(
