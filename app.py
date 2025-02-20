@@ -1,4 +1,5 @@
 import json
+#import wikipediaapi
 import re
 import os
 from flask import Flask, request, jsonify
@@ -11,10 +12,10 @@ end_point = os.environ.get("endPoint")  # Ensure these are set in your environme
 api_key = os.environ.get("apiKey")  # Ensure these are set in your environment
 
 # Initialize Wikipedia API
-wiki_wiki = wikipediaapi.Wikipedia(
-    language="en",
-    user_agent="TuftsCSAdvisingBot/1.0 (danielheo@tufts.edu)"
-)
+#wiki_wiki = wikipediaapi.Wikipedia(
+    #language="en",
+    #user_agent="TuftsCSAdvisingBot/1.0 (danielheo@tufts.edu)"
+#)
 
 class Chatbot:
     def __init__(self, session_id="TuftsAdvisingSession"):
