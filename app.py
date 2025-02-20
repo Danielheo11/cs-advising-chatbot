@@ -2,9 +2,10 @@ import json
 import wikipediaapi
 import re
 import os
-
-from flask import Flask, request, jsonify, render_template
+from flask import Flask, request, jsonify
 from llmproxy import generate, pdf_upload  # Use llmproxy functions for generation and PDF upload
+
+app = Flask(__name__)
 
 # Fetch API keys from environment variables
 end_point = os.environ.get("END_POINT")  # Ensure these are set in your environment
@@ -15,8 +16,6 @@ wiki_wiki = wikipediaapi.Wikipedia(
     language="en",
     user_agent="TuftsCSAdvisingBot/1.0 (danielheo@tufts.edu)"
 )
-
-app = Flask(__name__)
 
 class Chatbot:
     def __init__(self, session_id="TuftsAdvisingSession"):
@@ -76,23 +75,46 @@ class Chatbot:
         """Process user query and return formatted chatbot response."""
         return self.ask_llm(query)  # Only returning cleaned response without extras
 
-@app.route('/')
-def home():
-    return render_template("index.html")  # This serves the frontend HTML page
+@app.route('/', methods=['POST'])
+def hello_world():
+   return jsonify({"text": 'Hello from Koyeb - you reached the main page!'})
 
-@app.route('/chat', methods=['POST'])
-def chat():
-    data = request.json
-    user_message = data.get("message", "")
+@app.route('/query', methods=['POST'])
+def query():
+    data = request.get_json() 
 
-    if not user_message:
-        return jsonify({"error": "No message provided"}), 400
+    # Extract relevant information
+    user = data.get("user_name", "Unknown")
+    message = data.get("text", "")
 
-    # Get chatbot response
-    response = chatbot.get_response(user_message)
+    print(data)
 
-    return jsonify({"response": response})
+    # Ignore bot messages
+    if data.get("bot") or not message:
+        return jsonify({"status": "ignored"})
+
+    print(f"Message from {user} : {message}")
+
+    # Generate a response using LLMProxy
+    response = generate(
+        model="4o-mini",
+        system="You are an AI academic advisor for Tufts CS students. Provide responses based on official guidelines.",
+        query=message,
+        temperature=0.0,
+        lastk=0,
+        session_id="GenericSession"
+    )
+
+    response_text = response['response']
+    
+    # Send response back
+    print(response_text)
+
+    return jsonify({"text": response_text})
+
+@app.errorhandler(404)
+def page_not_found(e):
+    return "Not Found", 404
 
 if __name__ == '__main__':
-    chatbot = Chatbot()  # Initialize the chatbot instance
-    app.run(host='0.0.0.0', port=5001, debug=True)  # Run Flask app
+    app.run(debug=True)
