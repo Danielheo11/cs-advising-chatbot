@@ -2,8 +2,8 @@ import os
 import wikipediaapi
 import re
 from flask import Flask, request, jsonify, render_template
-import requests
 from typing import Optional  # Ensures compatibility with Python 3.9
+from llmproxy import generate  # Import generate from llmproxy
 
 # Fetch API keys from environment variables
 end_point = os.environ.get("END_POINT")  # Make sure to set this in Koyeb
@@ -32,74 +32,20 @@ class Chatbot:
     def generate(self, model: str, system: str, query: str, temperature: Optional[float] = None, lastk: Optional[int] = None,
                  session_id: Optional[str] = None, rag_threshold: Optional[float] = 0.3, rag_usage: Optional[bool] = False,
                  rag_k: Optional[int] = 5):
-        """Generate response using the model."""
-        headers = {'x-api-key': api_key}
-        
-        request = {
-            'model': model,
-            'system': system,
-            'query': query,
-            'temperature': temperature,
-            'lastk': lastk,
-            'session_id': session_id,
-            'rag_threshold': rag_threshold,
-            'rag_usage': rag_usage,
-            'rag_k': rag_k
-        }
+        """Generate response using the model via llmproxy."""
+        response = generate(
+            model=model,
+            system=system,
+            query=query,
+            temperature=temperature,
+            lastk=lastk,
+            session_id=session_id,
+            rag_threshold=rag_threshold,
+            rag_usage=rag_usage,
+            rag_k=rag_k
+        )
 
-        try:
-            response = requests.post(end_point, headers=headers, json=request)
-            response.raise_for_status()  # Raises HTTPError if status is 4xx or 5xx
-
-            res = response.json()
-
-            # Return only the chatbot response (no debug)
-            return {
-                'response': res.get('result', "⚠️ No valid response found."),
-                'rag_context': res.get('rag_context', "")
-            }
-
-        except requests.exceptions.HTTPError as e:
-            print(f"❌ HTTP Error: {e}")
-        except requests.exceptions.RequestException as e:
-            print(f"❌ API Request Failed: {e}")
-
-        return {"response": "❌ API request failed. Try again later.", "rag_context": ""}
-
-    def pdf_upload(self, path: str, strategy: Optional[str] = None, description: Optional[str] = None, session_id: Optional[str] = None):
-        """Upload PDFs."""
-        params = {
-            'description': description,
-            'session_id': session_id,
-            'strategy': strategy
-        }
-
-        multipart_form_data = {
-            'params': (None, json.dumps(params), 'application/json'),
-            'file': (None, open(path, 'rb'), "application/pdf")
-        }
-
-        response = self.upload(multipart_form_data)
         return response
-
-    def upload(self, multipart_form_data):
-        """Upload data."""
-        headers = {
-            'x-api-key': api_key
-        }
-
-        msg = None
-        try:
-            response = requests.post(end_point, headers=headers, files=multipart_form_data)
-            
-            if response.status_code == 200:
-                msg = "Successfully uploaded. It may take a short while for the document to be added to your context."
-            else:
-                msg = f"Error: Received response code {response.status_code}"
-        except requests.exceptions.RequestException as e:
-            msg = f"An error occurred: {e}"
-        
-        return msg
 
     def ask_llm(self, query):
         """Ask the LLM while using RAG for retrieval where necessary."""
