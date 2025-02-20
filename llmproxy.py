@@ -7,18 +7,16 @@ end_point = os.environ.get("endPoint")
 api_key = os.environ.get("apiKey")
 
 def generate(
-	model: str,
-	system: str,
-	query: str,
-	temperature: float | None = None,
-	lastk: int | None = None,
-	session_id: str | None = None,
+    model: str,
+    system: str,
+    query: str,
+    temperature: float | None = None,
+    lastk: int | None = None,
+    session_id: str | None = None,
     rag_threshold: float | None = 0.5,
     rag_usage: bool | None = False,
     rag_k: int | None = 0
-	):
-	
-
+):
     headers = {
         'x-api-key': api_key
     }
@@ -41,14 +39,18 @@ def generate(
         response = requests.post(end_point, headers=headers, json=request)
 
         if response.status_code == 200:
-            res = json.loads(response.text)
-            msg = {'response':res['result'],'rag_context':res['rag_context']}
+            res = response.json()  # This will parse the response as JSON
+            msg = {'response': res.get('result', ''), 'rag_context': res.get('rag_context', '')}
         else:
             msg = f"Error: Received response code {response.status_code}"
     except requests.exceptions.RequestException as e:
         msg = f"An error occurred: {e}"
-    return msg	
 
+    # Ensure we return a dictionary (in case of error message)
+    if isinstance(msg, str):  # If msg is a string (error message), return a default structure
+        return {'response': msg, 'rag_context': ''}
+    
+    return msg
 
 
 def upload(multipart_form_data):
@@ -76,8 +78,7 @@ def pdf_upload(
     strategy: str | None = None,
     description: str | None = None,
     session_id: str | None = None
-    ):
-    
+):
     params = {
         'description': description,
         'session_id': session_id,
@@ -97,20 +98,17 @@ def text_upload(
     strategy: str | None = None,
     description: str | None = None,
     session_id: str | None = None
-    ):
-    
+):
     params = {
         'description': description,
         'session_id': session_id,
         'strategy': strategy
     }
 
-
     multipart_form_data = {
         'params': (None, json.dumps(params), 'application/json'),
         'text': (None, text, "application/text")
     }
-
 
     response = upload(multipart_form_data)
     return response
