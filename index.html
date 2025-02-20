@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tufts CS Advising Chatbot</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #f4f6f9;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            flex-direction: column;
+        }
+        .chat-container {
+            width: 450px;
+            max-width: 95%;
+            background: #ffffff;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            height: 70vh;
+        }
+        .chat-header {
+            font-size: 22px;
+            font-weight: bold;
+            color: #003B73;
+            text-align: center;
+        }
+        .message-container {
+            flex: 1;
+            overflow-y: auto;
+            padding-right: 10px;
+            margin-bottom: 10px;
+            font-size: 16px;
+        }
+        .message-container p {
+            margin-bottom: 10px;
+        }
+        .message-container ul {
+            margin-left: 20px;
+        }
+        input[type="text"] {
+            padding: 10px;
+            width: 100%;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+            margin-bottom: 10px;
+        }
+        button {
+            background-color: #003B73;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        button:hover {
+            background-color: #005bb5;
+        }
+    </style>
+</head>
+<body>
+    <div class="chat-container">
+        <div class="chat-header">
+            Tufts CS Advising Chatbot
+        </div>
+        <div class="message-container" id="response"></div>
+        <input type="text" id="userMessage" placeholder="Ask me something..." />
+        <button onclick="sendMessage()">Send</button>
+    </div>
+    <script>
+        async function sendMessage() {
+            let userMessage = document.getElementById("userMessage").value;
+            let responseDiv = document.getElementById("response");
+
+            let response = await fetch("/chat", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({ message: userMessage })
+            });
+
+            let data = await response.json();
+
+            // Format the response content by replacing newlines with <br> and adding proper paragraphs
+            let formattedResponse = data.response.replace(/\n/g, "<br>");
+            formattedResponse = formattedResponse.replace(/\*{2}(.*?)\*{2}/g, "<strong>$1</strong>"); // For **bold** formatting
+            
+            responseDiv.innerHTML = `<strong>Chatbot:</strong><br><p>${formattedResponse}</p>`;
+            document.getElementById("userMessage").value = ''; // Clear input field
+        }
+    </script>
+</body>
+</html>
