@@ -75,25 +75,29 @@ class Chatbot:
         """Process user query and return formatted chatbot response."""
         return self.ask_llm(query)  # Only returning cleaned response without extras
 
+# Testing Route
+@app.route('/test', methods=['GET'])
+def test():
+    return "Test endpoint working!"
+
 @app.route('/', methods=['POST'])
 def hello_world():
    return jsonify({"text": 'Hello from Koyeb - you reached the main page!'})
 
 @app.route('/query', methods=['POST'])
 def query():
-    data = request.get_json() 
+    data = request.get_json()
+    print(f"Data received: {data}")  # Log the incoming data to ensure it hits this route
 
     # Extract relevant information
     user = data.get("user_name", "Unknown")
     message = data.get("text", "")
 
-    print(data)
-
-    # Ignore bot messages
-    if data.get("bot") or not message:
-        return jsonify({"status": "ignored"})
-
-    print(f"Message from {user} : {message}")
+    if not message:
+        return jsonify({"status": "ignored", "message": "No message received"})
+    
+    # Log the message to verify it's being processed
+    print(f"Message from {user}: {message}")
 
     # Generate a response using LLMProxy
     response = generate(
@@ -105,10 +109,8 @@ def query():
         session_id="GenericSession"
     )
 
-    response_text = response['response']
-    
-    # Send response back
-    print(response_text)
+    response_text = response.get('response', 'No valid response found.')
+    print(f"Response from LLM: {response_text}")  # Log the response from the LLM
 
     return jsonify({"text": response_text})
 
