@@ -8,8 +8,8 @@ from llmproxy import generate, pdf_upload  # Use llmproxy functions for generati
 app = Flask(__name__)
 
 # Fetch API keys from environment variables
-end_point = os.environ.get("END_POINT")  # Ensure these are set in your environment
-api_key = os.environ.get("API_KEY")  # Ensure these are set in your environment
+end_point = os.environ.get("endPoint")  # Ensure these are set in your environment
+api_key = os.environ.get("apiKey")  # Ensure these are set in your environment
 
 # Initialize Wikipedia API
 wiki_wiki = wikipediaapi.Wikipedia(
