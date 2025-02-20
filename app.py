@@ -75,31 +75,30 @@ class Chatbot:
         """Process user query and return formatted chatbot response."""
         return self.ask_llm(query)  # Only returning cleaned response without extras
 
-# Testing Route - No need to alter this route if it's just for testing
+# Testing Route
 @app.route('/test', methods=['GET'])
 def test():
     return "Test endpoint working!"
 
-# Remove or modify this endpoint if it's not needed:
 @app.route('/', methods=['POST'])
 def hello_world():
-   return jsonify({"text": 'This is the chatbot, ready to assist!'})
+   return jsonify({"text": 'Hello from Koyeb - you reached the main page!'})
 
-# This is where the actual chatbot logic happens:
 @app.route('/query', methods=['POST'])
 def query():
+    # Log the complete incoming data to ensure it hits this route
     data = request.get_json()
-    print(f"Data received: {data}")  # Log the incoming data to ensure it hits this route
+    print(f"Data received: {json.dumps(data, indent=2)}")  # Log the complete data
 
     # Extract relevant information
     user = data.get("user_name", "Unknown")
     message = data.get("text", "")
-
+    
+    # Handle case where message is missing
     if not message:
         return jsonify({"status": "ignored", "message": "No message received"})
     
-    # Log the message to verify it's being processed
-    print(f"Message from {user}: {message}")
+    print(f"Message from {user}: {message}")  # Log the message to verify it's being processed
 
     # Generate a response using LLMProxy
     response = generate(
@@ -111,8 +110,11 @@ def query():
         session_id="GenericSession"
     )
 
+    # Log the response from the LLM
+    print(f"Response from LLM: {json.dumps(response, indent=2)}")  # Log the full response
+    
     response_text = response.get('response', 'No valid response found.')
-    print(f"Response from LLM: {response_text}")  # Log the response from the LLM
+    print(f"Final Response: {response_text}")  # Log the final response that will be sent
 
     return jsonify({"text": response_text})
 
