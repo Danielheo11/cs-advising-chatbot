@@ -1,7 +1,7 @@
 import json
-#import wikipediaapi
-import re
 import os
+import re
+import requests
 from flask import Flask, request, jsonify
 from llmproxy import generate, pdf_upload  # Assuming these functions are correctly defined
 
@@ -11,77 +11,56 @@ app = Flask(__name__)
 end_point = os.environ.get("endPoint")  # Ensure these are set in your environment
 api_key = os.environ.get("apiKey")  # Ensure these are set in your environment
 
-# Initialize Wikipedia API
-#wiki_wiki = wikipediaapi.Wikipedia(
-    #language="en",
-    #user_agent="TuftsCSAdvisingBot/1.0 (danielheo@tufts.edu)"
-#)
+# Rocketchat credentials
+ROCKETCHAT_URL = "https://chat.genaiconnect.net/direct/6N5ZduGQWJJXSEqXYzzWcNaJFCWDLjWp8J"
+BOT_TOKEN = "WAxcUQUshcuvyYe-q0AXMXR7cSh31tpYxliLEBU6gHX"
+BOT_USER_ID = "zzWcNaJFCWDLjWp8J"
 
-class Chatbot:
-    def __init__(self, session_id="TuftsAdvisingSession"):
-        self.session_id = session_id
-        self.upload_pdfs()
+# Function to send a message
+def send_message(room_id, text):
+    url = f"{ROCKETCHAT_URL}/chat.postMessage"
+    headers = {
+        "Content-Type": "application/json",
+        "X-Auth-Token": BOT_TOKEN,
+        "X-User-Id": BOT_USER_ID
+    }
+    data = {
+        "channel": room_id,
+        "text": text
+    }
+    response = requests.post(url, headers=headers, json=data)
+    return response.json()
 
-    def upload_pdfs(self):
-        """Upload PDFs for retrieval-augmented generation (RAG)."""
-        print("Uploading advising PDFs for retrieval...")
-        pdf_upload("CompSci_LA_major.pdf", session_id=self.session_id, strategy='smart')  # Using pdf_upload function
-        pdf_upload("CS_Course_Descriptions.pdf", session_id=self.session_id, strategy='smart')  # Using pdf_upload function
-        print("PDFs uploaded. Ready to chat!\n")
+# Function to simulate typing
+def typing_indication(room_id):
+    url = f"{ROCKETCHAT_URL}/livechat/typing"
+    headers = {
+        "Content-Type": "application/json",
+        "X-Auth-Token": BOT_TOKEN,
+        "X-User-Id": BOT_USER_ID
+    }
+    data = {
+        "roomId": room_id,
+        "typing": True
+    }
+    response = requests.post(url, headers=headers, json=data)
+    return response.json()
 
-    def ask_llm(self, query):
-        """Ask the LLM while using RAG for retrieval where necessary."""
-        response = generate(
-            model="4o-mini",
-            system="You are an AI academic advisor for Tufts CS students. Provide responses based on official guidelines.",
-            query=query,
-            temperature=0.7,
-            lastk=3,
-            session_id=self.session_id,
-            rag_usage=True,
-            rag_threshold=0.3,
-            rag_k=5
-        )
+# Function to handle incoming messages and trigger actions
+def handle_incoming_message(message, room_id):
+    if message.lower() == "help":
+        send_message(room_id, "How can I assist you today? :grinning:")  # Added emoji
+    elif message.lower() == "info":
+        send_message(room_id, "Here’s the info you requested! :book:")  # Added emoji
+    else:
+        send_message(room_id, "Let me get back to you shortly! :hourglass_flowing_sand:")
+        typing_indication(room_id)  # Simulate typing
+        # After processing, send a response to user
+        send_message(room_id, "Here’s the info you requested! :information_desk_person:")
 
-        # Extract chatbot response (removing unwanted metadata)
-        chatbot_response = response.get("response", "").strip()
-
-        # Ensure response is valid
-        if chatbot_response and chatbot_response.lower() not in ["no valid response found.", "an error was encountered"]:
-            return self.format_response(chatbot_response)
-
-        return "❌ I couldn't find a direct answer. Try rewording your question or asking for more details."
-
-    def format_response(self, response):
-        """Format chatbot response for clean and readable console output."""
-        formatted_response = re.sub(r'\*\*(.*?)\*\*', r'\1', response)  # Remove **bold**
-        formatted_response = formatted_response.replace("###", "").replace("\n\n", "\n")
-        formatted_response = formatted_response.replace("\u2265", ">=")  # Fix Unicode issues (≥ symbol)
-
-        # Remove unnecessary text after "Suggested Course Sequence"
-        formatted_response = re.split(r"(### Additional Considerations|Additional Considerations)", formatted_response)[0]
-
-        # Fix: Remove excessive whitespace and metadata
-        formatted_response = formatted_response.strip()
-
-        # Limit excessive text length (adjust max chars if needed)
-        MAX_LEN = 10000
-        if len(formatted_response) > MAX_LEN:
-            formatted_response = formatted_response[:MAX_LEN] + "\n\n... [Response trimmed]"
-
-        return formatted_response
-
-    def get_response(self, query):
-        """Process user query and return formatted chatbot response."""
-        return self.ask_llm(query)  # Only returning cleaned response without extras
-
-# Initialize Chatbot
-chatbot = Chatbot()
-
-# Testing Route
 @app.route('/test', methods=['GET'])
 def test():
-    return "Test endpoint working!"
+    return "Test endpoint working! :white_check_mark:"
 
 @app.route('/', methods=['POST'])
 def query():
@@ -115,11 +94,14 @@ def query():
     response_text = response.get('response', 'No valid response found.')
     print(f"Final Response: {response_text}")  # Log the final response that will be sent
 
+    # Add some emoji to the response for a more friendly tone
+    response_text = f"{response_text} :smiley:"
+
     return jsonify({"text": response_text})
 
 @app.errorhandler(404)
 def page_not_found(e):
-    return jsonify({"error": "Not Found"}), 404
+    return jsonify({"error": "Not Found :mag_right:"}), 404
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=8000)
